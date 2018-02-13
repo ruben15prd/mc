@@ -78,19 +78,50 @@ def cambio_base(decimal, base, tamanyo_apuesta):
     return cadena_ceros + resultado
 
 def cambia_bit_aleatorio(apuesta,R):
-    '''Cambia un bit aleatorio de una apuesta'''
+    '''Cambia R numero de bits aleatorios de una apuesta'''
     apuesta_alterada = apuesta[:]
+    bits_restantes_por_cambiar = list(range(0,len(apuesta_alterada)))
     
-    posibilidades = ['0','1','2']
-    aleatorio1 = random.randint(0, len(apuesta_alterada) - 1)
+
+    contador_bits_cambiados = 1
     
-    valor_apuesta = apuesta_alterada[aleatorio1]
-    posibilidades.remove(valor_apuesta)
-    
-    aleatorio2 = random.randint(0, len(posibilidades) - 1)
-    apuesta_alterada[aleatorio1] = posibilidades[aleatorio2]
-    
-    
+    while contador_bits_cambiados <= R:
+        posibilidades = ['0','1','2']
+        if contador_bits_cambiados == 1:
+            aleatorio1 = random.randint(0, len(bits_restantes_por_cambiar) - 1)
+            
+            posicion_editar = bits_restantes_por_cambiar[aleatorio1]
+            
+            valor_apuesta_anterior = apuesta_alterada[posicion_editar]
+            posibilidades.remove(valor_apuesta_anterior)
+            
+            aleatorio2 = random.randint(0, len(posibilidades) - 1)
+            apuesta_alterada[posicion_editar] = posibilidades[aleatorio2]
+            
+            #Borramos la posicion elegida para que no se modifique mas
+            bits_restantes_por_cambiar.pop(posicion_editar)
+            
+            
+        else:
+            #Generamos un numero aleatorio entre 0 y 1, si es menor que 0.5 no cambiamos y si es
+            # superior a 0.5 cambiamos
+            aleatorio3 = random.random()
+            if aleatorio3 >= 0.5:
+                aleatorio1 = random.randint(0, len(bits_restantes_por_cambiar) - 1)
+                
+                posicion_editar = bits_restantes_por_cambiar[aleatorio1]
+                valor_apuesta_anterior = apuesta_alterada[posicion_editar]
+                posibilidades.remove(valor_apuesta_anterior)
+                
+                aleatorio2 = random.randint(0, len(posibilidades) - 1)
+                apuesta_alterada[posicion_editar] = posibilidades[aleatorio2]
+                
+                #Borramos la posicion elegida para que no se modifique mas
+                bits_restantes_por_cambiar.pop(posicion_editar)
+            
+        
+        contador_bits_cambiados = contador_bits_cambiados + 1
+        
     
     return apuesta_alterada
     
@@ -221,23 +252,23 @@ def simulated_annealing_apuestas(n,T,frio,veces,R,tamanyo_apuesta,S):
     
     print("-------------------------------------------------------")
     while len(N) > 0:
-        print("Longitud N: " + str(len(N)))
+        #print("Longitud N: " + str(len(N)))
         
         for elem in C:
             j = 1
             anterior = elem[:]
-            print("Valor de T: " + str(T)) 
+            #print("Valor de T: " + str(T)) 
             while j <= veces:
                 
                 print("--------------------------------------")
-                print("Vez: " + str(j))
+                #print("Vez: " + str(j))
                 #Creamos una variable temporal
                 C_aux = C[:]
                 N_aux = N[:]
                 d = cambia_bit_aleatorio(elem,R)
-                print("elem: " + str(elem) + " - elem alterado: " + str(d))
+                #print("elem: " + str(elem) + " - elem alterado: " + str(d))
                 # Actualizamos C_aux
-                print("c_aux: " + str(C_aux) + " - elem para borrar: " + str(anterior))
+                #print("c_aux: " + str(C_aux) + " - elem para borrar: " + str(anterior))
                 C_aux.remove(anterior)
                 C_aux.append(d)
                 
@@ -247,7 +278,7 @@ def simulated_annealing_apuestas(n,T,frio,veces,R,tamanyo_apuesta,S):
                 # Preguntamos si nos mejora el numero de apuestas que recubre
                 print("Longitud N antes: " + str(len(N)) + " - Longitud N ahora: " + str(len(N_aux)))
                 if len(N_aux) <= len(N):
-                    print("Actualizo porque es mejor")
+                    #print("Actualizo porque es mejor")
                     #Actualizar C y N
                     anterior = d[:]
                     C = C_aux[:]
@@ -255,9 +286,9 @@ def simulated_annealing_apuestas(n,T,frio,veces,R,tamanyo_apuesta,S):
                 else:
                     num_aleatorio = random.random()
                     probabilidad = math.exp(-(1*len(N))/(T*1.0))
-                    print("Probabilidad: " + str(probabilidad) + " - num aleatorio: " + str(num_aleatorio))
+                    #print("Probabilidad: " + str(probabilidad) + " - num aleatorio: " + str(num_aleatorio))
                     if probabilidad < num_aleatorio:
-                        print("Permito actualizar con probabilidad")
+                        #print("Permito actualizar con probabilidad")
                         #Actualizar C y N
                         anterior = d[:]
                         C = C_aux[:]
@@ -269,12 +300,13 @@ def simulated_annealing_apuestas(n,T,frio,veces,R,tamanyo_apuesta,S):
     
     print("Apuestas recubridoras: "+ str(C))
     
-    
+  
 #Generamos las apuestas de un tamaño
 S1 = genera_todas_apuestas(5)
-print("Apuestas totales: "+ str(S1) + " - Numero de apuestas: " + str(len(S1)))
+#print("Apuestas totales: "+ str(S1) + " - Numero de apuestas: " + str(len(S1)))
 # Filtramos las apuestas generadas indicando: lista de apuestas a filtrar, variantes, equis, doses
 S1 = filtra_apuestas(S1,[2],[1,2],[1,2])
 print("Apuestas filtradas: "+ str(S1) + " - Numero de apuestas: " + str(len(S1)))
 
-resultado1 = simulated_annealing_apuestas(12,2,0.95,2,1,4,S1)
+#resultado1 = simulated_annealing_apuestas(12,2,0.95,2,1,4,S1)
+
