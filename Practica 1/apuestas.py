@@ -51,11 +51,12 @@ def genera_todas_apuestas(tamanyo):
     for i in range(numero_apuestas_totales):
         apuesta_lst = []
         apuesta_str = cambio_base(i,3,tamanyo)
-        
+        #print(apuesta_str)
         for c in apuesta_str:
             apuesta_lst.append(c)
             
         apuestas.append(apuesta_lst)
+          
     return apuestas
 
 def cambio_base(decimal, base, tamanyo_apuesta):
@@ -65,7 +66,6 @@ def cambio_base(decimal, base, tamanyo_apuesta):
         conversion = str(decimal % base) + conversion
         decimal = decimal // base
         
-    
     resultado = str(decimal) + conversion
     numero_ceros = tamanyo_apuesta -  len(resultado)
     
@@ -138,6 +138,8 @@ def filtra_apuestas(lista_todas_apuestas, lista_num_variantes, lista_num_equis, 
     filtro = [] # Lista de posibles cantidades de 1 y 2 
     apuestas_filtradas = []
     #Generamos las combinaciones posibles
+    
+    
     for variante in lista_num_variantes:
         for equis in lista_num_equis:
             
@@ -152,10 +154,18 @@ def filtra_apuestas(lista_todas_apuestas, lista_num_variantes, lista_num_equis, 
                 if [num_equis,doses] not in filtro:
                     filtro.append([num_equis,doses])
     
+   
+    '''
+    for equis in lista_num_equis:
+        
+        for doses in lista_num_doses:
+            filtro.append([equis,doses])
+    '''            
     #Filtramos las apuestas
     for apuesta in lista_todas_apuestas:
         #print("-----------")
         #print("apuesta: " + str(apuesta))
+        num_ceros_apuesta = 0
         num_equis_apuesta = 0
         num_doses_apuesta = 0
         #Contamos el numero de X y 2 que tiene la apuesta
@@ -165,12 +175,17 @@ def filtra_apuestas(lista_todas_apuestas, lista_num_variantes, lista_num_equis, 
                 num_equis_apuesta = num_equis_apuesta + 1
             if elem == '2':
                 num_doses_apuesta = num_doses_apuesta + 1
+            if elem == '0':
+                num_ceros_apuesta = num_ceros_apuesta + 1
             
         # Nos quedamos con aquellas apuestas que pasen el filtro
         #print("num equis : " + str(num_equis_apuesta))
         #print("num doses : " + str(num_doses_apuesta))
-        if [num_equis_apuesta,num_doses_apuesta] in filtro:
+        
+        
+        if [num_equis_apuesta,num_doses_apuesta] in filtro  and apuesta not in apuestas_filtradas:
             apuestas_filtradas.append(apuesta)
+            
     #print(filtro)    
     return apuestas_filtradas
         
@@ -197,18 +212,22 @@ def calcula_puntos_cubiertos_por_C_de_S(C,S,R,tamanyo_apuesta):
     puntos_cubiertos = []
     
     for apuesta_s in S:
+        #print("-------------------")
+        #print("apuesta en S:" + str(apuesta_s))
         for apuesta_c in C:
+            #print("apuesta en C:" + str(apuesta_c))
             distancia = 0
             contador = 0
             while contador < tamanyo_apuesta:
                 valor_apuesta_s = apuesta_s[contador]
                 valor_apuesta_c = apuesta_c[contador]
                 
-                if valor_apuesta_s != valor_apuesta_c:
+                #print("valor_apuesta_s: " + str(valor_apuesta_s) +  " - "  + "valor_apuesta_c: " + str(valor_apuesta_c))
+                if str(valor_apuesta_s) != str(valor_apuesta_c):
                     distancia = distancia + 1
                 
                 contador = contador + 1
-                
+            #print("distancia: " +str(distancia) + " - " + str(R))   
             if distancia <= R:
                 puntos_cubiertos.append(apuesta_s)
     
@@ -228,6 +247,16 @@ def puntos_sin_cubrir_por_C_de_S(puntos_totales,puntos_cubiertos):
 #Simulated annealing
     
 def simulated_annealing_apuestas(n,T,frio,veces,R,tamanyo_apuesta,S):
+    '''
+    n = Número de bolas en C
+    T = Temperatura inicial
+    frio = Parametro para ir reduciendo la temperatura
+    veces = Numero de veces a ejecutar por bola en C
+    R = Radio de las bolas de C
+    tamanyo_apuestas = tamaño de las apuestas
+    S = Conjunto de apuestas de partida
+    
+    '''
     #n = 5 # El número de bolas de radio R con que se pretende recubrir el espacio S
     
     C = [] # Conjunto de n apuestas concretas de los partidos en el sistema
@@ -257,56 +286,117 @@ def simulated_annealing_apuestas(n,T,frio,veces,R,tamanyo_apuesta,S):
         for elem in C:
             j = 1
             anterior = elem[:]
-            #print("Valor de T: " + str(T)) 
-            while j <= veces:
-                
-                print("--------------------------------------")
-                #print("Vez: " + str(j))
-                #Creamos una variable temporal
-                C_aux = C[:]
-                N_aux = N[:]
-                d = cambia_bit_aleatorio(elem,R)
-                #print("elem: " + str(elem) + " - elem alterado: " + str(d))
-                # Actualizamos C_aux
-                #print("c_aux: " + str(C_aux) + " - elem para borrar: " + str(anterior))
-                C_aux.remove(anterior)
-                C_aux.append(d)
-                
-                puntos_cubiertos_despues_cambio = calcula_puntos_cubiertos_por_C_de_S(C_aux,S,R,tamanyo_apuesta)
-                
-                N_aux = puntos_sin_cubrir_por_C_de_S(S,puntos_cubiertos_despues_cambio)
-                # Preguntamos si nos mejora el numero de apuestas que recubre
-                print("Longitud N antes: " + str(len(N)) + " - Longitud N ahora: " + str(len(N_aux)))
-                if len(N_aux) <= len(N):
-                    #print("Actualizo porque es mejor")
-                    #Actualizar C y N
-                    anterior = d[:]
-                    C = C_aux[:]
-                    N = N_aux[:]
-                else:
-                    num_aleatorio = random.random()
-                    probabilidad = math.exp(-(1*len(N))/(T*1.0))
-                    #print("Probabilidad: " + str(probabilidad) + " - num aleatorio: " + str(num_aleatorio))
-                    if probabilidad < num_aleatorio:
-                        #print("Permito actualizar con probabilidad")
+            #print("Valor de T: " + str(T))
+            if len(N) != 0:
+                while j <= veces:
+                    
+                    print("--------------------------------------")
+                    #print("Vez: " + str(j))
+                    #Creamos una variable temporal
+                    C_aux = C[:]
+                    N_aux = N[:]
+                    d = cambia_bit_aleatorio(elem,R)
+                    #print("elem: " + str(elem) + " - elem alterado: " + str(d))
+                    # Actualizamos C_aux
+                    #print("c_aux: " + str(C_aux) + " - elem para borrar: " + str(anterior))
+                    C_aux.remove(anterior)
+                    C_aux.append(d)
+                    
+                    puntos_cubiertos_despues_cambio = calcula_puntos_cubiertos_por_C_de_S(C_aux,S,R,tamanyo_apuesta)
+                    
+                    N_aux = puntos_sin_cubrir_por_C_de_S(S,puntos_cubiertos_despues_cambio)
+                    # Preguntamos si nos mejora el numero de apuestas que recubre
+                    print("Longitud N antes: " + str(len(N)) + " - Longitud N ahora: " + str(len(N_aux)))
+                    if len(N_aux) <= len(N):
+                        #print("Actualizo porque es mejor")
                         #Actualizar C y N
                         anterior = d[:]
                         C = C_aux[:]
                         N = N_aux[:]
-               
-                j = j + 1 
+                    else:
+                        num_aleatorio = random.random()
+                        probabilidad = math.exp(-(len(N))/(T))
+                        #print("Probabilidad: " + str(probabilidad) + " - num aleatorio: " + str(num_aleatorio))
+                        if num_aleatorio < probabilidad :
+                            #print("Permito actualizar con probabilidad")
+                            #Actualizar C y N
+                            anterior = d[:]
+                            C = C_aux[:]
+                            N = N_aux[:]
+                    j = j + 1 
                           
         T = T * frio
+    #print("Apuestas recubridoras: "+ str(C))
+    return C
     
-    print("Apuestas recubridoras: "+ str(C))
     
   
 #Generamos las apuestas de un tamaño
-S1 = genera_todas_apuestas(5)
-#print("Apuestas totales: "+ str(S1) + " - Numero de apuestas: " + str(len(S1)))
+S1 = genera_todas_apuestas(4)
+print("Apuestas totales: "+ str(S1) + " - Numero de apuestas: " + str(len(S1)))
 # Filtramos las apuestas generadas indicando: lista de apuestas a filtrar, variantes, equis, doses
 S1 = filtra_apuestas(S1,[2],[1,2],[1,2])
 print("Apuestas filtradas: "+ str(S1) + " - Numero de apuestas: " + str(len(S1)))
 
-#resultado1 = simulated_annealing_apuestas(12,2,0.95,2,1,4,S1)
+#Parametros: n,T,frio,veces,R,tamanyo_apuesta,S
+#resultado1 = simulated_annealing_apuestas(9,2,0.95,2,1,4,S1)
+'''Resultado obtenido:
+Apuestas recubridoras: [['1', '2', '1', '2'], ['2', '2', '2', '0'], ['2', '1', '1', '1'], ['0', '0', '1', '0'], 
+['2', '0', '0', '2'], ['1', '1', '0', '0'], ['0', '2', '0', '1'], ['1', '0', '2', '1'], ['0', '1', '2', '2']]      
+'''
+#print("Apuestas recubridoras: "+ str(resultado1))
+
+# Para el problema de 6 multiples
+S2 = genera_todas_apuestas(6)
+print("Apuestas totales: "+ str(S2) + " - Numero de apuestas: " + str(len(S2)))
+# Filtramos las apuestas generadas indicando: lista de apuestas a filtrar, variantes, equis, doses
+S2 = filtra_apuestas(S2,[2,3,4],[0,1,2],[0,1,2])
+print("Apuestas filtradas: "+ str(S2) + " - Numero de apuestas: " + str(len(S2)))
+
+#Parametros: n,T,frio,veces,R,tamanyo_apuesta,S
+resultado2 = simulated_annealing_apuestas(150,2,0.95,2,1,6,S2)
+'''Resultado obtenido:
+Apuestas recubridoras: 
+    [['2', '0', '1', '2', '1', '0'], ['1', '1', '0', '2', '0', '0'], ['1', '0', '0', '0', '2', '0'], ['0', '2', '0', '1', '1', '2'], 
+    ['2', '2', '0', '0', '0', '0'], ['1', '0', '0', '0', '1', '2'], ['0', '2', '0', '0', '2', '0'], ['0', '2', '1', '0', '1', '2'],
+    ['2', '2', '1', '0', '1', '0'], ['0', '1', '0', '0', '0', '2'], ['1', '1', '2', '0', '0', '2'], ['0', '0', '0', '1', '0', '1'], 
+    ['1', '0', '2', '0', '0', '2'], ['1', '0', '0', '1', '2', '0'], ['1', '1', '2', '2', '0', '0'], ['1', '2', '0', '2', '1', '0'], 
+    ['1', '2', '1', '0', '0', '0'], ['2', '1', '0', '2', '0', '1'], ['0', '0', '2', '1', '1', '0'], ['0', '1', '2', '0', '2', '0'], 
+    ['2', '0', '2', '0', '0', '1'], ['2', '0', '2', '1', '1', '0'], ['2', '0', '0', '0', '2', '1'], ['0', '2', '0', '0', '0', '2'],
+    ['2', '1', '1', '0', '0', '0'], ['2', '0', '1', '1', '0', '2'], ['0', '1', '2', '0', '1', '2'], ['1', '0', '2', '0', '0', '1'], 
+    ['0', '0', '2', '2', '1', '0'], ['2', '1', '0', '1', '0', '0'], ['2', '1', '0', '0', '2', '0'], ['1', '1', '0', '2', '2', '0'], 
+    ['0', '1', '0', '1', '0', '2'], ['0', '0', '0', '2', '0', '2'], ['0', '0', '1', '1', '0', '2'], ['0', '1', '1', '2', '0', '2'], 
+    ['2', '2', '1', '1', '0', '0'], ['1', '1', '0', '0', '0', '0'], ['1', '0', '0', '0', '0', '1'], ['0', '1', '0', '2', '2', '1'], 
+    ['0', '2', '0', '0', '1', '0'], ['0', '0', '2', '0', '0', '2'], ['0', '2', '0', '1', '0', '2'], ['1', '0', '2', '1', '0', '0'], 
+    ['2', '0', '0', '0', '1', '0'], ['0', '1', '0', '2', '0', '1'], ['0', '2', '1', '1', '2', '0'], ['0', '1', '0', '0', '2', '1'],
+    ['0', '0', '0', '2', '2', '1'], ['0', '1', '2', '0', '0', '0'], ['1', '0', '1', '0', '2', '2'], ['2', '2', '0', '1', '0', '1'],
+    ['1', '2', '0', '1', '0', '2'], ['0', '2', '1', '2', '0', '0'], ['0', '0', '2', '1', '0', '0'], ['2', '0', '0', '0', '2', '0'], 
+    ['0', '2', '0', '1', '2', '0'], ['1', '0', '0', '2', '2', '0'], ['2', '1', '1', '0', '0', '2'], ['2', '0', '1', '0', '0', '1'], 
+    ['2', '2', '0', '1', '1', '0'], ['1', '0', '2', '1', '0', '2'], ['2', '0', '0', '1', '0', '1'], ['0', '1', '0', '1', '2', '0'], 
+    ['2', '2', '0', '0', '1', '0'], ['0', '2', '0', '1', '2', '1'], ['2', '1', '1', '0', '2', '0'], ['2', '1', '0', '1', '0', '2'], 
+    ['2', '0', '0', '0', '1', '2'], ['0', '1', '1', '0', '0', '0'], ['1', '0', '2', '1', '2', '0'], ['0', '2', '1', '0', '1', '0'],
+    ['2', '0', '1', '1', '2', '0'], ['0', '0', '1', '2', '0', '1'], ['1', '0', '2', '0', '2', '1'], ['0', '0', '1', '2', '0', '2'],
+    ['0', '1', '2', '0', '0', '1'], ['0', '0', '2', '0', '1', '1'], ['2', '0', '0', '1', '1', '2'], ['0', '0', '1', '1', '2', '2'], 
+    ['0', '0', '0', '2', '1', '0'], ['0', '2', '0', '1', '1', '0'], ['1', '0', '0', '2', '0', '1'], ['0', '0', '1', '0', '0', '2'],
+    ['0', '2', '0', '1', '0', '0'], ['0', '0', '1', '0', '2', '1'], ['2', '0', '0', '2', '0', '0'], ['1', '0', '0', '0', '2', '1'], 
+    ['2', '0', '1', '0', '1', '0'], ['0', '0', '2', '0', '2', '0'], ['0', '0', '1', '0', '2', '2'], ['1', '2', '0', '1', '2', '0'], 
+    ['1', '1', '0', '0', '2', '0'], ['0', '0', '1', '0', '1', '2'], ['0', '2', '0', '0', '1', '1'], ['1', '2', '0', '0', '1', '2'], 
+    ['1', '1', '0', '0', '0', '2'], ['2', '0', '0', '0', '1', '1'], ['1', '0', '2', '2', '1', '0'], ['0', '1', '0', '2', '2', '0'],
+    ['2', '1', '0', '2', '1', '0'], ['0', '2', '2', '0', '1', '1'], ['0', '1', '1', '0', '2', '2'], ['0', '2', '0', '2', '0', '0'], 
+    ['1', '1', '0', '2', '0', '2'], ['0', '0', '1', '0', '2', '0'], ['0', '1', '2', '0', '0', '2'], ['0', '1', '2', '1', '0', '2'],
+    ['2', '0', '0', '1', '0', '2'], ['1', '2', '1', '0', '2', '0'], ['0', '1', '1', '2', '0', '0'], ['0', '1', '2', '1', '2', '0'],
+    ['1', '2', '2', '1', '0', '0'], ['0', '1', '0', '0', '2', '0'], ['0', '1', '2', '2', '0', '1'], ['1', '0', '2', '2', '0', '0'], 
+    ['2', '0', '0', '1', '0', '0'], ['0', '2', '0', '0', '1', '2'], ['2', '2', '1', '0', '0', '1'], ['0', '0', '2', '1', '2', '0'],
+    ['0', '0', '1', '2', '1', '2'], ['2', '0', '1', '2', '0', '0'], ['1', '0', '2', '0', '1', '2'], ['2', '0', '1', '0', '0', '0'],
+    ['0', '0', '2', '1', '0', '2'], ['0', '0', '0', '2', '2', '0'], ['2', '1', '2', '1', '0', '0'], ['0', '1', '0', '0', '1', '2'],
+    ['0', '2', '2', '0', '0', '1'], ['0', '0', '2', '1', '2', '1'], ['0', '0', '2', '0', '0', '1'], ['2', '0', '2', '0', '0', '2'],
+    ['2', '1', '2', '2', '1', '0'], ['0', '2', '0', '1', '0', '0'], ['1', '0', '0', '2', '0', '1'], ['1', '1', '0', '1', '2', '2'], 
+    ['1', '1', '0', '1', '2', '2'], ['0', '0', '2', '1', '2', '2'], ['1', '2', '1', '0', '0', '0'], ['0', '2', '1', '2', '0', '2'], 
+    ['2', '0', '1', '2', '2', '1'], ['0', '1', '1', '0', '0', '1'], ['2', '0', '0', '1', '0', '0'], ['1', '0', '1', '0', '0', '2'], 
+    ['0', '0', '0', '1', '2', '2'], ['1', '0', '0', '1', '2', '0'], ['1', '2', '1', '2', '0', '2'], ['0', '2', '2', '1', '2', '0'], 
+    ['1', '1', '2', '0', '2', '0'], ['1', '2', '2', '0', '0', '0']]
+'''
+print("Apuestas recubridoras: "+ str(resultado2))
+
+
 
